@@ -1,0 +1,11 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    background: #1a1a1a;
+}
+
+#gameCanvas {
+    width: 100vw;
+    height: 100vh;
+    image-rendering: pixelated;
+}
