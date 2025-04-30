@@ -3,24 +3,29 @@ const ctx = canvas.getContext('2d');
 canvas.width = 1280;
 canvas.height = 720;
 
-// 1. Добавляем прелоадер
+// ======== Система загрузки ========
 let assetsLoaded = false;
 const totalAssets = 4;
 let loadedAssets = 0;
 
-// 2. Новый класс для загрузки изображений
 class AssetLoader {
     static loadImage(src) {
         return new Promise((resolve, reject) => {
             const img = new Image();
             img.src = src;
-            img.onload = () => resolve(img);
-            img.onerror = (err) => reject(err);
+            img.onload = () => {
+                console.log('Загружен:', src);
+                resolve(img);
+            };
+            img.onerror = (err) => {
+                console.error('Ошибка загрузки:', src, err);
+                reject(err);
+            };
         });
     }
 }
 
-// --- Игрок ---
+// ======== Игрок ========
 const player = {
     x: 400,
     y: 500,
@@ -37,7 +42,7 @@ const player = {
     }
 };
 
-// --- Враги ---
+// ======== Враги ========
 class Enemy {
     constructor(x, y) {
         this.x = x;
@@ -47,8 +52,6 @@ class Enemy {
         this.speed = 3;
         this.direction = 1;
         this.health = 50;
-        
-        // Анимация
         this.frames = [];
         this.currentFrame = 0;
         this.animationTimer = 0;
@@ -58,19 +61,22 @@ class Enemy {
     async loadSprites() {
         try {
             for(let i = 1; i <= 4; i++) {
-                const img = await AssetLoader.loadImage(`assets/sprites/enemies/slime/frame_${i}.png`);
+                const img = await AssetLoader.loadImage(
+                    // Абсолютный путь для GitHub Pages
+                    '/eclipse-fudlings/assets/sprites/enemies/slime/frame_' + i + '.png'
+                );
                 this.frames.push(img);
                 loadedAssets++;
                 if(loadedAssets === totalAssets) assetsLoaded = true;
             }
         } catch(err) {
-            console.error('Ошибка загрузки спрайтов:', err);
+            console.error('Фатальная ошибка:', err);
         }
     }
 
     update(deltaTime) {
         if(!assetsLoaded) return;
-
+        
         this.x += this.speed * this.direction;
         if(this.x > canvas.width - this.width || this.x < 0) {
             this.direction *= -1;
@@ -84,7 +90,7 @@ class Enemy {
     }
 
     draw() {
-        if(assetsLoaded) {
+        if(assetsLoaded && this.frames[this.currentFrame]) {
             ctx.drawImage(
                 this.frames[this.currentFrame],
                 this.x,
@@ -99,7 +105,7 @@ class Enemy {
     }
 }
 
-// 3. Инициализация врагов с загрузкой
+// ======== Инициализация ========
 const enemies = [
     new Enemy(200, 500),
     new Enemy(800, 500)
@@ -107,7 +113,7 @@ const enemies = [
 
 enemies.forEach(enemy => enemy.loadSprites());
 
-// --- Коллизии ---
+// ======== Коллизии ========
 function checkCollisions() {
     enemies.forEach(enemy => {
         if(player.x < enemy.x + enemy.width &&
@@ -119,12 +125,12 @@ function checkCollisions() {
     });
 }
 
-// --- Управление ---
+// ======== Управление ========
 const keys = {};
 window.addEventListener('keydown', e => keys[e.code] = true);
 window.addEventListener('keyup', e => keys[e.code] = false);
 
-// --- Игровой цикл ---
+// ======== Игровой цикл ========
 let lastTime = 0;
 function gameLoop(timestamp) {
     const deltaTime = timestamp - lastTime;
@@ -160,23 +166,26 @@ function update(deltaTime) {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
+    // Пол
     ctx.fillStyle = '#2C3E50';
     ctx.fillRect(0, canvas.height - 100, canvas.width, 100);
     
+    // Персонажи
     player.draw();
     enemies.forEach(enemy => enemy.draw());
     
+    // Интерфейс
     ctx.fillStyle = '#FFFFFF';
     ctx.font = '24px Arial';
     ctx.fillText(`Health: ${Math.round(player.health)}`, 20, 40);
     
-    // 4. Индикатор загрузки
+    // Лоадер
     if(!assetsLoaded) {
         ctx.fillStyle = '#FFF';
         ctx.font = '32px Arial';
         ctx.fillText(
-            `Загрузка спрайтов: ${Math.round((loadedAssets/totalAssets)*100)}%`, 
-            canvas.width/2 - 200, 
+            `Загрузка: ${Math.round((loadedAssets/totalAssets)*100)}%`, 
+            canvas.width/2 - 120, 
             canvas.height/2
         );
     }
